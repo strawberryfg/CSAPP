@@ -1,0 +1,428 @@
+\documentclass{article}
+\usepackage{CJKutf8}
+\usepackage{setspace}
+\usepackage[fleqn]{amsmath}
+\usepackage{amssymb}
+\usepackage[pdftex]{graphicx}
+\begin{CJK}{UTF8}{gkai}
+\title{\textbf{CSAPP Y86 PJ Report}}
+\author{Qingfu Wan
+\and
+Department of Computer Science,Fudan University
+}
+\begin{document}
+\maketitle
+\begin{spacing}{1.5}
+\section{Introduction}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.5em}\\
+\begin{Huge}
+\textbf{建议用250\%模式查看}\\\\
+\end{Huge}
+主界面：两个按钮。\\
+单击“编辑器”按钮或选择菜单栏“编辑器”进入文本编辑器，单击“处理器”按钮或选择菜单栏“处理器”进入处理器，单击关于进入版本信息界面。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/pjall.png}
+\caption{Overall Form}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{csapppj/pjaboutall.png}
+\caption{About All}
+\end{figure}
+\\
+\\
+本程序主要实现了以下几个功能：\\
+(1)将Y86汇编代码处理成指令编码的形式，即用十六进制指令表示。\\
+(2)模拟Y86指令在CPU中的执行，实时显示如书上图4.52的PIPE Hardware Structure，实时显示每条指令流经FDEMW的二维表格(行为指令，列为周期)，实时显示历史周期中FDEMW各状态变量的值，实时显示内存数据及栈状态。\\
+(3)支持修改CPU频率，控制指令执行速度。\\
+(4)支持运行到某一特定周期，支持多断点（指令执行到断电集合中任意一个程序暂停），支持自动运行，支持前进一定指令和后退一定指令。\\
+(5)显示代码的编辑器关键词高亮，背景色高亮，在行头显示该指令所处的FDEMW阶段，随着程序执行高亮代码不断变化。\\
+\section{About The Program}
+关于整个软件\\\\\\\\\\\\\\\\\\
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.2\textwidth]{csapppj/about.png}
+\caption{Introduction To This Program}
+\end{figure}
+
+\section{Form1---Editor}
+\subsection{使用说明}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.0em}
+\begin{normalsize}
+\\
+单击“文件”菜单，选择“新建”或“打开”，如果当前编辑的代码没有保存，标题栏会显示“无标题- * ”，且会弹出窗口提示未保存。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.2\textwidth]{csapppj/pjeditornew.png}
+\caption{Save Before Open Or New File}
+\end{figure}
+\\
+输入一段Y86代码，注意仅在指令如rrmovl和寄存器（立即数）之间有空格，irmovl,rmmovl,mrmovl的立即数用诸如\$0x5F或\$1234表示，call和jXX后面直接跟地址如0xAB0或2345这样的数字表示。\\\\
+单击汇编,左图为输入的Y86代码，右边为转换后的指令码，可单击“菜单”--------“保存”按钮保存。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\textwidth]{csapppj/pjeditorys.png}
+\ \ \ \ \ \ \ \ \ \ \ \ 
+\includegraphics[width=0.42\textwidth]{csapppj/pjeditoryo.png}
+\caption{Before \& After Assembling---------Convert To Instruction Code}
+\end{figure}
+
+\\
+
+\end{normalsize}
+
+\subsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{8.0em}
+\begin{normalsize}
+\begin{itemize}
+
+\item
+\ \
+编辑器用的RichTextBox,由于RichTextBox的高亮只对一行的选中文\\
+\indent \ \ 本有效，要实现整行高亮比较困难，于是设计了一个填充颜色为黄色\\
+\indent \ \ 的Label控件悬浮在RichTextBox上方，根据光标所在位置移动Label。\\
+\indent \ \ 由于整个窗口可能不能显示全部代码，RichTextBox滚动条滑动VScroll\\
+\indent \ \ 事件触发行号发生变化，在ListBox中只显示当前窗口内所有行的行号。
+\item
+\ \
+将Y86处理成指令码的过程：\\
+\indent \ \ 
+把指令符号如rrmovl，立即数或寄存器，逗号，立即数或寄存器用字符\\
+\indent \ \ 串处理分割开，然后编码，没什么好说的。
+\end{itemize}
+\end{normalsize}
+\section{Form2---CPU Processor}
+\subsection{流水线图表}
+\subsubsection{使用说明}
+
+\begin{normalsize}
+\begin{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{csapppj/pjdiagram.png}
+\caption{Overall Pipeline Diagram}
+\end{figure}
+\item
+单击“全部运行”按钮，程序自动执行，可以看到各个阶段各个状态变量的值自动变化，绿色框中是变量的值，红色框中是当前某个状态寄存器中的指令。
+运行完毕后会弹出窗口显示运行完毕时的状态$\left( SHLT,SADR \right) $,三个Go按钮、暂停、继续、停止按钮失效。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.2\textwidth]{csapppj/pjfinish.png}
+\caption{Run All}
+\end{figure}
+\item
+单击“重置”按钮后，按钮恢复有效，回到最开始的周期0,按全部运行可以从头开始运行指令。
+\item
+单击左侧行号可以设置断点，支持多选设置多个断点，再次单击可以取消设置断点。当断点集合中任一指令进入Fetch阶段，程序自动暂停，如下图。断点会随滚动条滚动而自动滚动。左侧FDEMW显示每条指令进行到哪一阶段。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{csapppj/pjbreakpoint.png}
+\caption{Breakpoint Diagram}
+\end{figure}
+\item
+单击左侧选项卡“设置”可以设置CPU频率，1Hz大概是1秒一条指令。单击“暂停“按钮暂停指令执行，单击“继续”按钮继续执行，单击“停止”按钮停止当前整个Y86指令的执行，如下图。比如按“全部运行”程序停在断点处，再按“继续”或“全部运行”程序继续运行直到下一个断点或程序终止处。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.25\textwidth]{csapppj/pjtimer.png}
+\caption{Timer Setting}
+\end{figure}
+\item
+在Address中输入想要读/写的内存地址，单击“读内存”在Value中显示内存在这一地址的值，单击“写内存”将Value赋值给内存Address地址，或者按照文本框中的格式：地址 值，然后单击“设置”按钮将文本框中的信息写进内存。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.4\textwidth]{csapppj/pjmemory.png}
+\caption{Memory Read And Write}
+\end{figure}
+\end{itemize}
+\end{normalsize}
+\subsubsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}
+\\
+当内存地址$\leq$20000时，直接存在hash表中，否则存在一个二维数\\
+组mapmem中，第一维是地址，第二维是值。本来是想存在类似C++的\\
+STL map里面的，考虑到只作演示用，没有太多考虑效率的问题。具体流水线各
+寄存器、状态变量值的更新见下文。有了单步执行的代码，运行到某一cycle，前进/后退若干cycle，断点暂停等都是小事。具体使用了RichTextBox控件和左侧两个ListBox控件。
+\subsection{简易图}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}
+简易图里在文本框中显示各状态变量各寄存器的值，文本框只读。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{csapppj/pjsimple.png}
+\caption{Simple Diagram}
+\end{figure}
+
+\subsection{FDEMW}
+\subsubsection{使用说明}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}
+左侧为指令，右侧为指令所经过的阶段，有可能不是全部的FDEMW，上方数字表示对应周期，可以看到每条指令在什么周期进入到了什么阶段。暂停$\left( stall \right)$的F或者D用另一种颜色填充。\\\\
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.0\textwidth]{csapppj/FDEMW.png}
+\caption{FDEMW}
+\end{figure}\\
+单击“显示全部”按钮可以看到每条指令执行FDEMW阶段所对应的周期。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.0\textwidth]{csapppj/showall.png}
+\caption{showall}
+\end{figure}
+\subsubsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}\\
+为了方便展示，需要记录每个周期FDEMW五个寄存器中的指令分别是什么，需要记录每条指令是否经过了F、D、E、M、W五个阶段以及分别在什么周期处于这些阶段。值得注意的是当遇到加载/使用异常时，F和D分别为stall，上一条指令FDDEMW,下一条指令FFDEMW，到再下一条指令就恢复正常了，即stall只会在前后两条指令(一条load一条use)执行时发生。具体使用了DataGridView控件。
+\subsection{Show On ListBox}
+\subsubsection{使用说明}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}\\
+在文本框中输入想要查看的周期数,按回车即可看到输入周期的Fetch、\\
+Decode、Execute、Memory、Write Back阶段所有状态变量的值(包括异常状态,所在执行的指令具体是哪条以及一些不太重要的中间变量)、寄存器的值等等。按“$\langle $”回退,“$\rangle $”前进,“$\langle \langle$”设置第一周期,“$\rangle \rangle$”设置最后一个周期,“保存到文件”将每个周期各个变量的值保存到文件,就像pj的ppt要求上写的那样。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.3\textwidth]{csapppj/pjlistbox.png}
+\ \ \
+\includegraphics[width=0.4\textwidth]{csapppj/pjlistbox2.png}
+\caption{ListBox}
+\end{figure}
+\subsubsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}
+只需要用数组保存每个周期各个状态变量的值即可。
+\subsection{Memory}
+\subsubsection{使用说明}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}
+在文本框中输入想要显示的内存上界和内存下界，单击“显示”按钮，在列表框中呈现地址和地址对应的值。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{csapppj/pjshowmem.png}
+\caption{Show Memory}
+\end{figure}\\
+单击“显示栈”按钮显示从栈底esp往上若干地址元素的值，一个绿色的箭头指向栈底。\\\\
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{csapppj/pjshowstack.png}
+\caption{Show Stack}
+\end{figure}
+\subsubsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}
+简单的ListBox操作。
+\subsection{Setting}
+\subsubsection{使用说明}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}\\
+选择“不使用计时器”时，程序自动执行，当选择“使用计时器”时，可设置CPU每秒执行的指令数，即Hz，范围是1-1000Hz，滑动滑动条时，文本框中的频率自动变化，当然也可以手动输入设置频率。
+\subsubsection{实现细节}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}\\
+使用一个timer，不使用计时器时，将其Enabled属性设置为false，否则设置为true，每次触发计时器Tick事件，都判断当前是否在运行程序（只对“全部运行”按钮有效），当单击过“暂停”后，每次计时器计时，Tick事件中什么也不执行，当再单击“继续”后，下次计时器计时触发Tick事件就又会正常执行程序。
+\section{Y86 Implementation}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}\\
+整个Y86执行部分是按照以下机制进行的：
+\begin{itemize}
+\item
+基本执行单位为周期，对于每个周期按照Write Back,Memory,Execute,De\\
+code,Fetch部分计算。
+\item
+当前周期的W由上一周期的M计算得来，如果上一周期M的状态是SBUB（气泡 未执行）或SHLT（halt）或SADR（访问内存地址错误或当前指令地址错误）则W阶段没有做任何事。
+\item
+类似的，当前周期的M由上一周期的E计算得来，若E非SBUB，SHLT或SADR
+\item
+当前周期的E由上一周期的D计算得来，需要注意的是如果D\rule[-2pt]{0.2cm}{0.5pt}stall=1即D阶段需要暂停一周期，则向当前E插入一个气泡。
+\item
+当前周期的D由上一周期的F计算得来，如果F\rule[-2pt]{0.2cm}{0.5pt}stall=1，则向当前D插入一个气泡。
+\item
+当前周期的F阶段获取的PC由PC预测值F\rule[-2pt]{0.2cm}{0.5pt}predPC和上一周期M\rule[-2pt]{0.2cm}{0.5pt}valA，\\
+W\rule[-2pt]{0.2cm}{0.5pt}valM综合决定。
+\item
+按照从W到M到E到D到F计算的一大好处是算W时可以直接用M阶段各个状态变量值，因为此时这些状态变量并未更新，还是上一周期时候的值，这样执行保证了有序性。相当于是从F推进到D，从D推进到E，从E推进到M，从M推进到W，从W推进到F，各状态变量是通过流水线一点一点向上传递的，本质是一个迭代过程。
+\item
+计算F、D、E、M、W五大阶段各变量的代码主要参照书上HCL代码，做了一些小改动，总计约400行。
+\item
+一些重要的细节：\\
+(1)当D阶段暂停时不是什么都不做，还是需要Decode valA和valB，根据条件选择forward哪个值到d\rule[-2pt]{0.2cm}{0.5pt}valA和d\rule[-2pt]{0.2cm}{0.5pt}valB。\\
+(2)如果某一阶段（如Decode)在当前周期是Bubble状态，即未执行，Dec\\
+ode部分的所有相关变量都要强行设为Null(我用的是INTMIN=-2147483648)，如果这个错的话可能会引起其它地方出现异常。\\
+(3)如何决定程序如何终止？如果当W寄存器状态为SHLT（程序本身自带的halt）或者为SADR（两种情况，一种是访问内存Memory阶段产生的内存地址超过范围出错，一种是Fetch阶段Fetch到一个wrong的PC，即PC地址超过范围），则程序应当终止。\\
+(4)有些变量在某些周期是没有用的，比如有些指令 JMP不用ALU，要设为空。
+\item
+伪代码：
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.0\textwidth]{csapppj/pjt1.JPG}
+\caption{1}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{csapppj/pjt2.JPG}
+\caption{2}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{csapppj/pjt3.JPG}
+\caption{3}
+\end{figure}
+\end{itemize}
+\\\\\\\\
+\section{Test}
+\subsection{Test 1:\ \ \ \ Fibonacci(n=7)}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.5em}
+计算Fibonacci第7项，执行情况如下（结果保存在eax中，eax=13)
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/fibo1.png}
+\caption{Fibonacci N=7}
+\end{figure}
+\\\\\\\\\\\\\\
+\subsection{Test 2:\ \ \ \ Fibonacci(n=10)}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.3em}\\
+计算Fibonacci第10项，执行情况如下（结果保存在eax中，eax=55)
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/fibo2.png}
+\caption{Fibonacci N=10}
+\end{figure}
+\\\\\\\\\\\\\\
+\subsection{Test 3:\ \ \ \ asum}
+书上4.1.2小节的例子
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.3em}\\
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/asum.png}
+\caption{asum}
+\end{figure}
+\section{Key Point}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}\\
+本程序有以下几个亮点：\\
+1.自动将汇编语句转换为指令码。\\
+2.\textbf{画出了书上完整的PIPE图，能动态显示指令语句流经流水线各阶段的过程，动态显示各变量向上传递的过程。}\\
+3.\textbf{支持设置多个断点，精确控制指令执行速度，随时暂停继续终止，前进或后退任意周期，在程序执行过程中，一行的最前面显示这条指令处于F、D、E、M、W中的哪个阶段，调试功能强大。}\\
+4.代码编辑器背景高亮，关键字高亮，显示行号。\\
+5.以多种方式展现寄存器、状态变量、内存和栈中的值，可以方便查看历史的任意时刻的这些值。\\
+6.\textbf{画出了类似书上的梯形图，可以方便的查看当前周期有哪些语句处在什么状态，有哪些状态并没有任何语句在执行，可以完整地画出这样的梯形图。}\\
+7.\textbf{在所有程序段中都加入了try...catch(System.Exception err)这样的捕捉异常语句，保证程序在执行过程中若出现运行时错误会自动跳出所在程序块，而不会退出整个程序。}\\
+8.布局还可以，虽然没有动画，但是表现形式多样，生动形象，便于理解整个Pipeline的流程。
+\section{Fundamentation}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}\\
+本人有一定的UI和c\#基础，上学期的数据结构pj用c\#调用c++程序实现了一个轨迹分析系统。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{csapppj/pjds1.png}
+\caption{ds1}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.54\textwidth]{csapppj/pjds2.png}
+\caption{ds2}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.54\textwidth]{csapppj/pjds3.png}
+\caption{ds3}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.54\textwidth]{csapppj/pjds4.png}
+\caption{ds4}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.52\textwidth]{csapppj/pjds5.png}
+\caption{ds5}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.52\textwidth]{csapppj/pjds6.png}
+\caption{ds6}
+\end{figure}
+\\ \\ \\ \\
+\section{Shortcomings}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}\\
+存在的缺点和不足有以下几点：\\
+1.没有完整的动画，不能动态展现值传递过程。\\
+2.流水线图表中的背景图画的线有些乱，覆盖在其上的Label控件布局不够美观。\\
+3.汇编器暂不支持jXX+函数名比如jmp .L2这种形式转换为指令码（觉得没有什么必要），如果要保存常量数组到内存中，只能手动输入进行设置（觉得没有什么必要）。\\
+4.没有用STL中的map模拟内存存储，觉得耗时费力。\\
+5.查看历史状态值不支持查看历史内存中的值。（这样的话要保存二维数组，空间开销会非常大）\\
+6.简易图没有仔细布局。\\
+7.最多只支持11111条指令，FDEMW选项卡中那个DataGridView最多之能显示1111行*1111列。\\
+8.模拟CPU运行Y86指令速度比较慢。\\
+9.没有增加新指令，或者模拟Cache机制？乱序执行？(什么鬼)\\
+\section{Preview Of All Files}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{2.8em}\\
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llr}  
+\hline
+文件名 & 功能 & 行数\\ \hline  
+frmaboutall.cs & 主界面的帮助——关于 & 26\\         
+frmabouteditor.cs & 编辑器的帮助—— & 26\\      
+frmeditor.cs & 编辑器（编译Y86码） & 629\\
+frmmain.cs & 主界面 & 49\\
+\textbf{frmtaby86.cs} &  \textbf{处理器（核心部分）} & \textbf{2669}\\ 
+ & 总计 & 3350 \\ \hline
+\end{tabular}
+\caption{Preview}
+\end{table}\\
+\section{Experiment Environment}
+需要安装.NET Framework 4.5\\\\\\\\\\\\\\\\\\
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/env1.png}
+\caption{Computer}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.3\textwidth]{csapppj/env2.png}
+\caption{Visual Studio}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1.0\textwidth]{csapppj/env3.png}
+\caption{Setup.exe}
+\end{figure}
+\section{Feelings}
+\noindent
+\hangafter=0
+\setlength{\hangindent}{3.3em}\\
+感受就是感觉流水线部分一开始看起来挺复杂，后来对着书上HCL代码把每种情况都推导模拟测试了一遍，想通了流水线运作的机制，只要确定好顺序，比如W\ $\langle\  -$M,M\ $\langle\  -$E,E\ $\langle\  -$D,D\ $\langle\  -$F,就可以比较轻松地写出代码了。流水线核心部分400行一共写了一晚上，调试了一下午+一晚上，中间有很多非常细微的bug只能通过不断测试才能找到，一开始我通过了助教给的asum，但是测试我自己在ubuntu32位系统下生成的求fibonacci第n项的Y86码时，eax返回值一直是错的，最后通过单步调试和静态查错找到了漏洞。另外需要说的是即使单步调试找到了错误，最好再对着代码把整个框架在脑子里模拟一遍，模拟每一种情况下程序会给变量赋什么样的值，执行怎样的if语句，这一步是非常有用的，因为很多调试需要很久的错误可以通过仔细静态查错找出来。另外就是UI部分虽然没有什么技术含量，但是耗时非常多，细节繁琐，需要考虑的问题非常多。整个Y86程序流水线部分只写了一天，调试了一天，UI部分写了6天左右。从代码长度上看，Y86只占411行，UI占了大部分。
+总的来说，写完以后对流水线的认识谈不上突破天际，也有了很大的提升，比单纯看书本学到了更多实践知识。
+\end{spacing}
+\end{document}
+\end{CJK}{UTF8}{gkai}

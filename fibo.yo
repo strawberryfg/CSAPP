@@ -1,0 +1,36 @@
+  0x000: 30F400040000  | irmovl 0x400,%esp
+  0x006: 700b000000    | jmp Main
+  0x00b: 30F607000000  |Main:irmovl $7,%esi
+  0x011: 406400000000  | rmmovl %esi,0(%esp)
+  0x017: 801d000000    | call Fibo
+  0x01c: 00            | halt
+  0x01d: A05F          |Fibo:pushl %ebp
+  0x01f: 2045          | rrmovl %esp,%ebp
+  0x020: A03F          | pushl %ebx
+  0x021: 30F614000000  | irmovl $20,%esi
+  0x027: 6164          | subl %esi,%esp
+  0x029: 506508000000  | mrmovl 8(%ebp),%esi
+  0x02f: 30F702000000  | irmovl $2,%edi
+  0x035: 6176          | subl %edi,%esi
+  0x037: 7647000000    | jg L2
+  0x03c: 30F001000000  | irmovl $1,%eax
+  0x042: 707d000000    | jmp L3
+  0x047: 502508000000  |L2:mrmovl 8(%ebp),%edx
+  0x04d: 30F601000000  | irmovl $1,%esi
+  0x053: 6162          | subl %esi,%edx
+  0x055: 402400000000  | rmmovl %edx,0(%esp)
+  0x05b: 801d000000    | call Fibo
+  0x060: 2003          | rrmovl %eax,%ebx
+  0x062: 502508000000  | mrmovl 8(%ebp),%edx
+  0x068: 30F602000000  | irmovl $2,%esi
+  0x06e: 6162          | subl %esi,%edx
+  0x070: 402400000000  | rmmovl %edx,0(%esp)
+  0x076: 801d000000    | call Fibo
+  0x07b: 6030          | addl %ebx,%eax
+  0x072: 30F700000000  | irmovl $0,%edi
+  0x07c: 400700000000  | rmmovl %eax,0(%edi)
+  0x07d: 30F614000000  |L3:irmovl $20,%esi
+  0x083: 6064          | addl %esi,%esp
+  0x084: B03F          | popl %ebx
+  0x085: B05F          | popl %ebp
+  0x087: 90            | ret
